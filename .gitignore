@@ -2,3 +2,5 @@
 *.csv
 *.data
 *.zip
+__pycahe__
+.DS_Store

@@ -2,7 +2,13 @@
 
 环境:Python3
 
-需要安装scapy`pip install scapy`
+需要安装scapy,用于读取pcap文件
+
+`pip install scapy`
+
+joblib(可选)
+
+`pip install joblib`
 
 ## 功能
 
@@ -38,7 +44,7 @@
 
 - 源IP
 - 目的IP
-- 开始时间
+- 日期&时间两个特征
 - 流包到达时间间隔的均值\标准差\最大值\最小值(正向\反向\不分正反)  共3*4=12个特征
 - 流的持续时间
 - 拥塞窗口大小的总和\均值\标准差\最大值\最小值(正向\反向\不分正反)  3*5=15个特征
@@ -57,11 +63,24 @@
 python3 flow_pro.py –p [pcap文件名] –o [输出文件名]
 ```
 
-读取当前目录所有Pcap,仅限Linux/Mac系统
+读取当前目录所有pcap,仅限Linux/Mac系统
 
 ```
 python3 flow_pro.py –a  
 ```
 
+默认输出到stream.csv文件(追加在后面而不是生成新的文件)，可以通过-o指定输出的文件名
 
-默认输出到stream.csv文件，可以通过-o指定输出的文件名
+
+- -p --pcap 指定输入的pcap文件名
+- -a --all 读取当前目录所有的pcap文件,此模式下`-d`参数失效
+- -o --output 指定输出的csv文件名,如不指定默认为`stream.csv`
+- -d --dump 使用此参数后,会生成文件名为`flows.data`的文件,假如需要下次分析的时候,可以不用读取pcap文件,加快速度
+- -l --load 指定读取的`data`文件,例如`--load flows.data`,使用此参数后`-p`,`-a`等参数失效
+
+## feature
+
+1. 拥有相同的五元组即视为一条流,没有对实际的TCP连接的建立和断开进行分析,所以存在一条流中有多个TCP的情况
+2. 建议一次只读取一个pcap文件,`-a`参数慎用,可能存在未知的bug
+3. pcap文件过大时,读取时间可能很长,这是由scapy库决定的,使用`-l`参数读取现成的data文件可以加快速度
+4. `-d`与`-l`参数需要安装joblib库

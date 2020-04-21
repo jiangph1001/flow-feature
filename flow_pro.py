@@ -127,8 +127,8 @@ def packet_hdr_len(flow):
 def sortKey(pkt):
     return pkt.time
 
-def flow_features(flows,csvname):
-    file = open(csvname,"a+")
+def flow_features(flows,csv_name):
+    file = open(csv_name,"a+",newline="")
     writer = csv.writer(file)
     for flow in flows.values():
         pkts = flow.packets
@@ -198,27 +198,26 @@ def flow_features(flows,csvname):
 
 # pcapname：输入pcap的文件名
 # csvname : 输出csv的文件名
-def read_pcap(pcapname,csvname):
+def read_pcap(pcapname,csv_name):
     try:
         # 可能存在格式错误读取失败的情况
         packets=rdpcap(pcapname)
     except:
         print("read pcap error")
         return
-    global flows
     flows = {}
     for data in packets:
         try:
-            data['IP'] # 抛掉不是IP协议的数据包
+            data['IP'] 
         except:
-            continue
+            continue # 抛掉不是IP协议的数据包
         if "TCP" in data:
             protol = "TCP"
         elif "UDP" in data:
             protol = "UDP"
         else:
-            #非这两种协议的包，忽视掉
             continue
+            #非这两种协议的包，忽视掉
         src,sport,dst,dport = NormalizationSrcDst(data['IP'].src,data[protol].sport,
                                                           data['IP'].dst,data[protol].dport)
         hash_str = tuple2hash(src,sport,dst,dport,protol)
@@ -226,22 +225,31 @@ def read_pcap(pcapname,csvname):
             flows[hash_str] = Flow(src,sport,dst,dport,protol)
         flows[hash_str].add_packet(data)
     print("有{}条数据流".format(len(flows)))
-    flow_features(flows,csvname)
-    dump(flows,"flows.data")
+    flow_features(flows,csv_name)
+
+def load_flows(flow_data,csv_name):
+    flows = load(flow_data)
+    flow_features(flows,csv_name)
+
 
 if __name__ == "__main__":
-
+    global flows
     parser = argparse.ArgumentParser()
     parser.add_argument("-p","--pcap",help="pcap文件名",action='store',default='test.pcap')
     parser.add_argument("-o","--output",help="输出的csv文件名",action = 'store',default = "stream.csv")
     parser.add_argument("-a","--all",action = 'store_true',help ='读取当前文件夹下的所有pcap文件',default=False)
-    parser.add_argument("-t","--test",action = 'store_true',default = False)
-    parser.add_argument("-d","--dump",action = "store",help = "存储stream流变量,方便下次分析")
+    parser.add_argument("-d","--dump",action = "store_true",default = False,help = "存储stream流变量,方便下次分析")
+    parser.add_argument("-l","--load",action = "store")
+    flows = {}
     args = parser.parse_args()
-    csvname = args.output
-    if args.all == False:
+    csv_name = args.output
+    if args.load:
+        print("Loading ",args.load)
+        load_flows(args.load,csv_name)
+    elif args.all == False:
         pcapname = args.pcap
-        read_pcap(pcapname,csvname)
+        read_pcap(pcapname,csv_name)
+        dump(flows,"flows.data")
     else:
         #读取当前目录下的所有文件
         path = os.getcwd()
@@ -249,4 +257,6 @@ if __name__ == "__main__":
         for pcapname in all_file:
             if ".pcap" in pcapname:
                 # 只读取pcap文件
-                read_pcap(pcapname,csvname)
+                read_pcap(pcapname,csv_name)
+    
+    
