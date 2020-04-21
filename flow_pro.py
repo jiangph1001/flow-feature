@@ -8,6 +8,7 @@ import os,decimal
 from flow import *
 from joblib import *
 import math
+from datetime import datetime, timedelta, timezone
 
 # 根据规则区分服务器和客户端
 def NormalizationSrcDst(src,sport,dst,dport):
@@ -177,7 +178,12 @@ def flow_features(flows,csvname):
         f_ht_len=round(fp_hdr_len /(fpl_total+1), 6)
         b_ht_len=round(bp_hdr_len /(bpl_total+1), 6)
         d_ht_len=round(dp_hdr_len /dpl_total, 6)
-        feature=[flow.src,flow.dst,flow.start_time,fiat_mean,fiat_min,fiat_max,fiat_std,biat_mean,biat_min,biat_max,biat_std,
+
+        tz = timezone(timedelta(hours = -4 )) # 根据utc时间确定其中的值,北京时间为+8
+        dt = datetime.fromtimestamp(flow.start_time,tz)
+        date = dt.strftime("%Y-%m-%d")
+        time = dt.strftime("%H:%M:%S")
+        feature=[flow.src,flow.dst,date,time,fiat_mean,fiat_min,fiat_max,fiat_std,biat_mean,biat_min,biat_max,biat_std,
              diat_mean,diat_min,diat_max,diat_std,duration,fwin_total,fwin_mean,fwin_min,
              fwin_max,fwin_std,bwin_total,bwin_mean,bwin_min,bwin_max,bwin_std,dwin_total,
              dwin_mean,dwin_min,dwin_max,dwin_std,fpnum,bpnum,dpnum,bfpnum_rate,fpnum_s,
