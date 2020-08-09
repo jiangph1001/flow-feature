@@ -2,18 +2,22 @@
 
 环境:Python3
 
-需要安装scapy,用于读取pcap文件
 
-`pip install scapy`
 
-joblib(可选)
+依赖库
 
-`pip install joblib`
+- 需要安装scapy,用于读取pcap文件`pip install scapy`
+
+- ConfigParser用于读取配置文件`pip install ConfigParser`
+
+- joblib(可选)`pip install joblib`
+
+
 
 ## 功能
 
 读取pcap文件，输出多条流的信息到csv文件中
-仅读取TCP和UDP包
+仅读取TCP
 
 ## 版本
 
@@ -57,30 +61,27 @@ joblib(可选)
 
 ## 使用方法：
 
-读取指定Pcap
+`python get_flow_feature.py`
 
-```
-python3 flow_pro.py –p [pcap文件名] –o [输出文件名]
-```
+修改配置文件`run.conf`来更改运行模式
 
-读取当前目录所有pcap,仅限Linux/Mac系统
+### mode
 
-```
-python3 flow_pro.py –a  
-```
+- `run_mode` 有两种模式分别为`pcap`和`flow`
+  - 在pcap模式下，所有数据包会被视为属于同一个流，头两个字段为`pcap文件名`和`目的IP数量`
+  - 在flow模式下，相同五元组的数据包会被视为同一个流，头两个字段为`src`和`dst`
+- `read_all`为True时，会读取指定目录下的所有pcap文件,False时会读取`pcap_name`指定pcap文件
+- `pcap_loc`指定读取pcap的目录位置
+- `csv_name`用于指定输出特征时的文件名
 
-默认输出到stream.csv文件(追加在后面而不是生成新的文件)，可以通过-o指定输出的文件名
+### feature
 
+- `print_port`暂时没有用的配置参数
+- `print_colname`在csv文件中打印表头
+- `add_tag`暂时没有用的配置参数
 
-- -p --pcap 指定输入的pcap文件名
-- -a --all 读取当前目录所有的pcap文件,此模式下`-d`参数失效
-- -o --output 指定输出的csv文件名,如不指定默认为`stream.csv`
-- -d --dump 使用此参数后,会生成文件名为`flows.data`的文件,假如需要下次分析的时候,可以不用读取pcap文件,加快速度
-- -l --load 指定读取的`data`文件,例如`--load flows.data`,使用此参数后`-p`,`-a`等参数失效
+### joblib
 
-## feature
-
-1. 拥有相同的五元组即视为一条流,没有对实际的TCP连接的建立和断开进行分析,所以存在一条流中有多个TCP的情况
-2. 建议一次只读取一个pcap文件,`-a`参数慎用,可能存在未知的bug
-3. pcap文件过大时,读取时间可能很长,这是由scapy库决定的,使用`-l`参数读取现成的data文件可以加快速度
-4. `-d`与`-l`参数需要安装joblib库
+- `dump_switch`设置为True时，将保存一份中间文件flows.data，下次可以使用load直接读取来加快访问速度，此功能暂时有bug
+- `load_switch`设置为True时，将读取flows.data，不再读取pcap文件
+- `load_name`指定读取的文件名
