@@ -4,7 +4,7 @@
 
 
 
-依赖库
+### 依赖库
 
 - 需要安装scapy,用于读取pcap文件`pip install scapy`
 
@@ -42,7 +42,7 @@
 
 ### 高级版
 
-`flow_pro.py`
+`get_flow_feature.py`
 
 输出包含:
 
@@ -59,17 +59,45 @@
 
 
 
-## 使用方法：
+## 使用方法
 
 `python get_flow_feature.py`
 
 修改配置文件`run.conf`来更改运行模式
 
+
+## 应用场景
+
+面对不同情况时的配置，未说明的可以不管
+### 读取一个含有大量数据包的pcap
+```
+read_all = False
+pcap_name = 【需要读取的pcap】
+dump_switch = True
+```
+### 需要更改代码再次生成特征时
+```
+load_switch = True
+load_name = flows.data
+```
+
+### 读取某一个文件夹下大量的pcap
+
+```
+run_mode = pcap/flow
+read_all = True
+pcap_loc = 【pcap文件夹位置】
+
+```
+
+
+## 参数设置
 ### mode
 
 - `run_mode` 有两种模式分别为`pcap`和`flow`
   - 在pcap模式下，所有数据包会被视为属于同一个流，头两个字段为`pcap文件名`和`目的IP数量`
   - 在flow模式下，相同五元组的数据包会被视为同一个流，头两个字段为`src`和`dst`
+  - 如果是通过`load_switch`载入的数据包，则无论run_mode设置成什么都是flow模式
 - `read_all`为True时，会读取指定目录下的所有pcap文件,False时会读取`pcap_name`指定pcap文件
 - `pcap_loc`指定读取pcap的目录位置
 - `csv_name`用于指定输出特征时的文件名
@@ -82,6 +110,8 @@
 
 ### joblib
 
-- `dump_switch`设置为True时，将保存一份中间文件flows.data，下次可以使用load直接读取来加快访问速度，此功能暂时有bug
+- `dump_switch`设置为True时，将保存一份中间文件flows.data，下次可以使用load直接读取来加快访问速度
+  - 此功能仅在读取一个pcap文件时有效，即read_all 和load_switch都是False的时候
 - `load_switch`设置为True时，将读取flows.data，不再读取pcap文件
 - `load_name`指定读取的文件名
+
