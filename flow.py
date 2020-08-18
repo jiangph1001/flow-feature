@@ -1,11 +1,41 @@
-import math,decimal,hashlib,csv
+import math,decimal,hashlib,csv,uuid,time,os
 import configparser
 import scapy
 from scapy.all import *
 from scapy.utils import PcapReader
 #from scapy_ssl_tls.scapy_ssl_tls import *
 #from datetime import datetime, timedelta, timezone
+#import threading
+import multiprocessing
+from multiprocessing import Process
+feature_name=['fiat_mean','fiat_min','fiat_max','fiat_std','biat_mean','biat_min','biat_max','biat_std',
+             'diat_mean','diat_min','diat_max','diat_std','duration','fwin_total','fwin_mean','fwin_min',
+             'fwin_max','fwin_std','bwin_total','bwin_mean','bwin_min','bwin_max','bwin_std','dwin_total',
+             'dwin_mean','dwin_min','dwin_max','dwin_std','fpnum','bpnum','dpnum','bfpnum_rate','fpnum_s',
+             'bpnum_s','dpnum_s','fpl_total','fpl_mean','fpl_min','fpl_max','fpl_std','bpl_total','bpl_mean',
+             'bpl_min','bpl_max','bpl_std','dpl_total','dpl_mean','dpl_min','dpl_max','dpl_std','bfpl_rate',
+             'fpl_s','bpl_s','dpl_s','fin_cnt','syn_cnt','rst_cnt','pst_cnt','ack_cnt','urg_cnt','cwe_cnt','ece_cnt',
+             'fwd_pst_cnt','fwd_urg_cnt','bwd_pst_cnt','bwd_urg_cnt','fp_hdr_len','bp_hdr_len','dp_hdr_len',''
+            'f_ht_len','b_ht_len','d_ht_len']
 
+
+class flowProcess(Process):
+    def __init__(self, writer,read_pcap,process_name = None):
+        Process.__init__(self)
+        self.pcaps = []
+        if process_name is None:
+            self.process_name = uuid.uuid1()
+        else:
+            self.process_name = process_name
+        self.writer = writer
+        self.read_pcap = read_pcap
+    def add_target(self,pcap_name):
+        self.pcaps.append(pcap_name)
+    def run(self):
+        print("process {} run".format(self.name))
+        for pcap_name in self.pcaps:
+            self.read_pcap(pcap_name,self.writer)
+        print("process {} finish".format(self.name))
 
 class Flow:
     def __init__(self,src,sport,dst,dport,protol = "TCP"):
@@ -19,37 +49,36 @@ class Flow:
         self.byte_num = 0
         self.packets = []
     def add_packet(self,packet):
-        # 在当前流下新增一个数据包
+        # add new packet in this flow
         '''
         self.byte_num += len(packet)
-        timestamp = packet.time   # 浮点型
+        timestamp = packet.time   # float
         self.start_time = min(timestamp,self.start_time)
         self.end_time = max(timestamp,self.end_time)
         packet_head = ""
         if packet["IP"].src == self.src:
-            # 代表这是一个客户端发往服务器的包
+            # means this is a packet which comes from client
             packet_head += "---> "   
             if self.protol == "TCP":
-                # 对TCP包额外处理
                 packet_head += "[{:^4}] ".format(str(packet['TCP'].flags))
         else:
             packet_head += "<--- "
-        #packet_information = packet_head + "timestamp={}".format(timestamp)
+        # packet_information = packet_head + "timestamp={}".format(timestamp)
         '''
         self.packets.append(packet)
 
-    # 计算flow的特征
-    # 如果无法计算，则返回None
+    # get this flow's feature
     def get_flow_feature(self):
         pkts = self.packets
         if len(pkts) <= 1:
-            # 如果该流仅有一个数据包，则不再统计特征
+            # if there is only one packet in this flow
+            # return None
             return None
 
         pkts.sort(key=sortKey)
         fwd_flow,bwd_flow=flow_divide(pkts,self.src)
-        #print(len(fwd_flow),len(bwd_flow))
-        # 包到达的时间间隔 13
+        # print(len(fwd_flow),len(bwd_flow))
+        # feature about packet arrival interval 13
         fiat_mean,fiat_min,fiat_max,fiat_std = packet_iat(fwd_flow)
         biat_mean,biat_min,biat_max,biat_std = packet_iat(bwd_flow)
         diat_mean,diat_min,diat_max,diat_std = packet_iat(pkts)
@@ -60,7 +89,7 @@ class Flow:
         bwin_total,bwin_mean,bwin_min,bwin_max,bwin_std = packet_win(bwd_flow)
         dwin_total,dwin_mean,dwin_min,dwin_max,dwin_std = packet_win(pkts)
         
-        # 包的数目 7
+        # feature about packet num  7
         fpnum=len(fwd_flow)
         bpnum=len(bwd_flow)
         dpnum=fpnum+bpnum
@@ -161,7 +190,7 @@ def flow_divide(flow,src):
 
 
 
-# 包到达时间间隔特征 
+# Packet arrival interval
 def packet_iat(flow):    
     piat=[]
     if len(flow)>0:
@@ -222,7 +251,7 @@ def packet_flags(flow,key):
     else:
         return flag[3],flag[5]
 
-# 包头部长度
+# length of packet header
 def packet_hdr_len(flow): 
     p_hdr_len=0
     for pkt in flow:
@@ -233,13 +262,87 @@ def packet_hdr_len(flow):
 def sortKey(pkt):
     return pkt.time
 
-feature_name=['fiat_mean','fiat_min','fiat_max','fiat_std','biat_mean','biat_min','biat_max','biat_std',
-             'diat_mean','diat_min','diat_max','diat_std','duration','fwin_total','fwin_mean','fwin_min',
-             'fwin_max','fwin_std','bwin_total','bwin_mean','bwin_min','bwin_max','bwin_std','dwin_total',
-             'dwin_mean','dwin_min','dwin_max','dwin_std','fpnum','bpnum','dpnum','bfpnum_rate','fpnum_s',
-             'bpnum_s','dpnum_s','fpl_total','fpl_mean','fpl_min','fpl_max','fpl_std','bpl_total','bpl_mean',
-             'bpl_min','bpl_max','bpl_std','dpl_total','dpl_mean','dpl_min','dpl_max','dpl_std','bfpl_rate',
-             'fpl_s','bpl_s','dpl_s','fin_cnt','syn_cnt','rst_cnt','pst_cnt','ack_cnt','urg_cnt','cwe_cnt','ece_cnt',
-             'fwd_pst_cnt','fwd_urg_cnt','bwd_pst_cnt','bwd_urg_cnt','fp_hdr_len','bp_hdr_len','dp_hdr_len',''
-            'f_ht_len','b_ht_len','d_ht_len']
 
+# judge if it is tcp packet
+def is_TCP_packet(pkt):
+    try:
+        pkt['IP'] 
+    except:
+        return False # drop the packet which is not IP packet
+    if "TCP" not in pkt:
+        return False
+    return True
+
+ 
+# judge if it is handshake packet 
+def is_handshake_packet(pkt):
+    handshake_flags = ["S","SA","F","FA"]
+    if pkt['TCP'].flags in handshake_flags:
+        #print("drop ",pkt['TCP'].flags)
+        return False
+    if pkt['TCP'].flags == "A" and len(pkt) <61:
+        #print("drop ACK")
+        return False
+    return True
+    
+# get feature from flow which has same 5 tuple
+def get_flow_feature_from_pcap(pcapname,writer):
+    try:
+        # It is possible that scapy can not read the pcap
+        packets=rdpcap(pcapname)
+    except Exception as e:
+        print("read {} ERROR:{}".format(pcapname,e))
+        return 
+    flows = {}
+    for pkt in packets:
+        if is_TCP_packet(pkt) == False:
+            continue
+        proto = "TCP"
+        src,sport,dst,dport = NormalizationSrcDst(pkt['IP'].src,pkt[proto].sport,
+                                                          pkt['IP'].dst,pkt[proto].dport)
+        hash_str = tuple2hash(src,sport,dst,dport,proto)
+        if hash_str not in flows:
+            flows[hash_str] = Flow(src,sport,dst,dport,proto)
+        flows[hash_str].add_packet(pkt)
+    pid = os.getpid()
+    print("{} has {} flows pid={}".format(pcapname,len(flows),pid))
+    for flow in flows.values():
+        feature = flow.get_flow_feature()
+        if feature == None:
+            # can't get valid feature
+            print("invalid flow {}:{}->{}:{}".format(flow.src,flow.sport,flow.dst,flow.dport))
+            continue
+        feature = [flow.src,flow.sport,flow.dst,flow.dport] + feature
+        writer.writerow(feature)
+
+# get a pcap feature
+def get_pcap_feature_from_pcap(pcapname,writer):
+    try:
+        # It is possible that scapy can not read the pcap
+        packets=rdpcap(pcapname)
+    except Exception as e:
+        print(" read {} ERROR:{} ".format(pcapname,e))
+        return
+    this_flow = None
+    for pkt in packets:
+        if is_TCP_packet(pkt) == False:
+            continue
+        proto = "TCP"
+        src,sport,dst,dport = NormalizationSrcDst(pkt['IP'].src,pkt[proto].sport,
+                                                          pkt['IP'].dst,pkt[proto].dport)
+        # hash_key = tuple2hash(src,sport,dst,dport,proto)
+        if this_flow == None:
+            this_flow = Flow(src,sport,dst,dport,proto)
+            this_flow.dst_sets = set()
+        this_flow.add_packet(pkt)
+        this_flow.dst_sets.add(dst)
+
+    feature = this_flow.get_flow_feature()
+    pid = os.getpid()
+    print("{} has {} different IP pid={}".format(pcapname,len(this_flow.dst_sets),pid))
+    if feature == None:
+        # can't get valid feature
+        print("invalid pcap {}".format(this_flow.src,this_flow.sport,this_flow.dst,this_flow.dport))
+        return  
+    feature = [pcapname,len(this_flow.dst_sets)] + feature
+    writer.writerow(feature)
