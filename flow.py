@@ -82,6 +82,8 @@ class Flow:
         fiat_mean,fiat_min,fiat_max,fiat_std = packet_iat(fwd_flow)
         biat_mean,biat_min,biat_max,biat_std = packet_iat(bwd_flow)
         diat_mean,diat_min,diat_max,diat_std = packet_iat(pkts)
+
+        # 为了防止除0错误，不让其为0
         duration = round(pkts[-1].time - pkts[0].time+ decimal.Decimal(0.0001), 6) 
         
         # 拥塞窗口大小特征 15
@@ -96,7 +98,7 @@ class Flow:
         bfpnum_rate = round(bpnum / (fpnum + 0.001), 6) 
         fpnum_s = round(fpnum / duration, 6)
         bpnum_s = round(bpnum / duration, 6)
-        dpnum_s = round(dpnum / duration, 6)
+        dpnum_s = fpnum_s + bpnum_s
         
         # 包的总长度 19
         fpl_total,fpl_mean,fpl_min,fpl_max,fpl_std = packet_len(fwd_flow)
@@ -105,7 +107,7 @@ class Flow:
         bfpl_rate = round(bpl_total / (fpl_total + 0.001), 6) 
         fpl_s = round(fpl_total / duration, 6)
         bpl_s = round(bpl_total / duration, 6)
-        dpl_s = round(dpl_total / duration, 6)
+        dpl_s = fpl_s + bpl_s
         
         # 包的标志特征 12
         fin_cnt,syn_cnt,rst_cnt,pst_cnt,ack_cnt,urg_cnt,cwe_cnt,ece_cnt=packet_flags(pkts,0)
@@ -115,7 +117,7 @@ class Flow:
         # 包头部长度 6
         fp_hdr_len=packet_hdr_len(fwd_flow)
         bp_hdr_len=packet_hdr_len(bwd_flow)
-        dp_hdr_len=packet_hdr_len(pkts)
+        dp_hdr_len=fp_hdr_len + bp_hdr_len
         f_ht_len=round(fp_hdr_len /(fpl_total+1), 6)
         b_ht_len=round(bp_hdr_len /(bpl_total+1), 6)
         d_ht_len=round(dp_hdr_len /dpl_total, 6)
@@ -163,17 +165,18 @@ def tuple2hash(src,sport,dst,dport,protocol = "TCP"):
     hash_str = src+str(sport)+dst+str(dport)+protocol
     return hashlib.md5(hash_str.encode(encoding="UTF-8")).hexdigest()
         
-# 均值,标准差,最大值,最小值计算
-def calculation(list_info):
+# 输入:list
+# 输出:mean,min,max,std
+def calculation(flow):
     mean_,min_,max_,std_=0,0,0,0
-    if len(list_info) < 1:
+    if len(flow) < 1:
         return [mean_,min_,max_,std_]
     else:
-        min_=round(min(list_info),6)
-        max_=round(max(list_info),6)
-        mean_ = round(sum(list_info)/len(list_info),6)
-        sd = sum([(i - mean_) ** 2 for i in list_info])
-        std_ = round(math.sqrt(sd / (len(list_info))),6)
+        min_=round(min(flow),6)
+        max_=round(max(flow),6)
+        mean_ = round(sum(flow)/len(flow),6)
+        sd = sum([(i - mean_) ** 2 for i in flow])
+        std_ = round(math.sqrt(sd / (len(flow))),6)
         return [mean_,min_,max_,std_]
 
 # 划分上行流和下行流
@@ -185,7 +188,6 @@ def flow_divide(flow,src):
             fwd_flow.append(pkt)
         else:
             bwd_flow.append(pkt)
-    #print("end divide",pkt.src)
     return fwd_flow,bwd_flow
 
 
@@ -262,7 +264,6 @@ def packet_hdr_len(flow):
 def sortKey(pkt):
     return pkt.time
 
-
 # judge if it is tcp packet
 def is_TCP_packet(pkt):
     try:
@@ -273,7 +274,6 @@ def is_TCP_packet(pkt):
         return False
     return True
 
- 
 # judge if it is handshake packet 
 def is_handshake_packet(pkt):
     handshake_flags = ["S","SA","F","FA"]

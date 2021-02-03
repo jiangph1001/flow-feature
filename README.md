@@ -48,16 +48,43 @@
 
 输出包含:
 
-- 源IP、端口
-- 目的IP、端口
-- 日期&时间两个特征
-- 流包到达时间间隔的均值\标准差\最大值\最小值(正向\反向\不分正反)  共3*4=12个特征
-- 流的持续时间
-- 拥塞窗口大小的总和\均值\标准差\最大值\最小值(正向\反向\不分正反)  3*5=15个特征
-- 包的数目\速率 等7个特征
-- 包的长度的均值\标准差\最大值\最小值(正向\反向\不分正反)  共3*4=12+ 7 = 19个特征
-- 标志特征 12个特征
-- 包头部长度 6个特征
+
+名称|解释| 数量
+--|--|--
+src|源ip|1
+sport| 源端口 |1
+dst|目的ip|1
+dport|目的端口|1
+fiat_*|上行-包到达时间间隔(mean,min,max,std)|4
+biat_*|下行-包到达时间间隔(mean,min,max,std)|4
+diat_*|包到达时间间隔(mean,min,max,std)|4
+duration|流持续时间|1
+fwin_*| 上行-拥塞窗口大小(total,mean,min,max,std)|5
+bwin_*| 下行-拥塞窗口大小(total,mean,min,max,std)|5
+dwin_*| 拥塞窗口大小(total,mean,min,max,std)|5
+fpnum| 上行-包数目|1
+bpnum| 下行-包数目|1
+dpnum| 包数目|1
+bfpnum_rate | 下行包数/上行包数|1
+fpnum_s | 上行-每秒包数|1
+bpnum_s | 下行-每秒包数|1
+dpnum_s | 每秒包数|1
+fpl_* | 上行-包长度(total,mean,min,max,std) |5
+bpl_* | 下行-包长度(total,mean,min,max,std)| 5
+dpl_* | 包长度(total,mean,min,max,std) | 5
+bfpl_rate | 上下行包长度总和(total)的比值 |1
+fpl_s | 上行速率 | 1
+bpl_s | 下行速率 | 1
+dpl_s | 总速率 | 1
+*_cnt | 标志位计数(fin,syn,rst,pst,ack,urg,cwe,ece) | 8
+fwd_*_cnt | 上行计数（pst,urg）| 2
+bwd_*_cnt | 下行计数（pst,urg）| 2
+fp_hdr_len | 上行-包头部长度总和 | 1
+bp_hdr_len | 下行-包头部长度总和 | 1
+dp_hdr_len | 包头部长度总和 | 1
+f_ht_len | 上行-包头部占总长度的比例 | 1
+b_ht_len | 下行-包头部占总长度的比例 | 1
+d_ht_len | 包头部占总长度的比例 | 1
 
 
 
@@ -89,9 +116,7 @@ load_name = flows.data
 run_mode = pcap/flow
 read_all = True
 pcap_loc = 【pcap文件夹位置】
-
 ```
-
 
 ## 参数设置
 ### mode
@@ -120,22 +145,24 @@ pcap_loc = 【pcap文件夹位置】
 - `load_name`指定读取的文件名
 
 
-
 ## 更新记录
+### 2021.2.3
+- 修改文档，优化特征计算逻辑  
+- 多线程bug尚未解决  
 
 ### 2020.8.18
-新增多进程功能，大幅度加快运行速度
+- 新增多进程功能，大幅度加快运行速度
 
 ### 2020.8.13
-重写代码结构，优化逻辑，改为读取配置文件
-删除时间戳特征
-并有两种运行模式pcap和flow
+- 重写代码结构，优化逻辑，改为读取配置文件
+- 删除时间戳特征
+- 改为两种运行模式pcap和flow
 
 ### 2020.4.22
-修改bug，增加dump和load功能
+- 修改bug，增加dump和load功能
 
 ### 2020.4.20
-提取更多的特征
+- 提取更多的特征
 
 ### 2020.4.19
-初版demo
+- 初版demo
