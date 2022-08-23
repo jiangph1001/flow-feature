@@ -2,11 +2,11 @@
 
 环境:Python3
 
-# warn
-多进程发现bug，调试中，配置文件默认切换为单进程
+## warn
+多进程模式下，若同时读取多个pcap文件，可能导致记录丢失。  
+建议忽略多进程功能，仅设置并发数为1
 
-
-### 依赖库
+## 依赖库
 
 - 需要安装scapy,用于读取pcap文件`pip install scapy`
 
@@ -19,19 +19,17 @@
 ## 功能
 
 读取pcap文件，输出多条流的信息到csv文件中
-仅读取TCP
 
-## 版本
 
-### 基础版 
+## 基础版 
 
 `flow_basic.py`
 
-仅输出流的基本特征
+输出每条流的基本统计特征
 
 包含:
 
-- 开始时间
+- 开始时间(%Y-%m-%d %H:%M:%S)
 - 持续时间
 - 源ip
 - 源端口
@@ -40,13 +38,24 @@
 - 包的数量
 - 流量(字节数)
 - 平均包长度
-- 协议(仅支持TCP与UDP)
+- 协议(支持**TCP**与**UDP**)
 
-### 高级版
+
+参数：
+
+- `-a`,`--all` 读取当前目录下的所有pcap文件。若指定该参数，则`-p`失效
+- `-p`,`--pcap`  读取单个pcap文件，后面跟pcap文件名
+- `-o`,`--output` 指定输出的csv文件名，默认为`stream.csv`
+- `-n`,`--nolog`  不在控制台输出日志
+
+## 高级版
+
+
 
 `get_flow_feature.py`
 
-输出包含:
+
+仅支持**TCP**,输出包含:
 
 
 名称|解释| 数量
@@ -88,29 +97,29 @@ d_ht_len | 包头部占总长度的比例 | 1
 
 
 
-## 使用方法
+### 使用方法
 
 `python get_flow_feature.py`
 
 修改配置文件`run.conf`来更改运行模式
 
 
-## 应用场景
+### 应用场景
 
 面对不同情况时的配置，未说明的可以不管
-### 读取一个含有大量数据包的pcap
+#### 读取一个含有大量数据包的pcap
 ```
 read_all = False
 pcap_name = 【需要读取的pcap】
 dump_switch = True
 ```
-### 需要更改代码再次生成特征时
+#### 需要更改代码再次生成特征时
 ```
 load_switch = True
 load_name = flows.data
 ```
 
-### 读取某一个文件夹下大量的pcap
+#### 读取某一个文件夹下大量的pcap
 
 ```
 run_mode = pcap/flow
@@ -118,12 +127,12 @@ read_all = True
 pcap_loc = 【pcap文件夹位置】
 ```
 
-## 参数设置
-### mode
+### 参数设置
+#### mode
 
 - `run_mode` 有两种模式分别为`pcap`和`flow`
-  - 在pcap模式下，所有数据包会被视为属于同一个流，头两个字段为`pcap文件名`和`目的IP数量`
-  - 在flow模式下，相同五元组的数据包会被视为同一个流，头两个字段为`src`和`dst`
+  - 在pcap模式下，来自同一个pcap的所有数据包会被视为属于同一个流，csv中的头两个字段为`pcap文件名`和`目的IP数量`
+  - 在flow模式下，相同五元组的数据包会被视为同一个流，头两个字段为`src`和`dst`。暂不支持跨pcap合并五元组（也不是不行，就是会占用大量内存）。
   - 如果是通过`load_switch`载入的数据包，则无论run_mode设置成什么都是flow模式
 - `read_all`为True时，会读取指定目录下的所有pcap文件,False时会读取`pcap_name`指定pcap文件
 - `pcap_loc`指定读取pcap的目录位置
@@ -131,13 +140,13 @@ pcap_loc = 【pcap文件夹位置】
 - `multi_process` 开启多进程（建议！）
 - `process_num` 多进程的数目，目前限制为不超过CPU核心数目
 
-### feature
+#### feature
 
 - `print_port`暂时没有用的配置参数
 - `print_colname`在csv文件中打印表头
 - `add_tag`暂时没有用的配置参数
 
-### joblib
+#### joblib
 
 - `dump_switch`设置为True时，将保存一份中间文件flows.data，下次可以使用load直接读取来加快访问速度
   - 此功能仅在读取一个pcap文件时有效，即read_all 和load_switch都是False的时候
@@ -146,9 +155,17 @@ pcap_loc = 【pcap文件夹位置】
 
 
 ## 更新记录
+
+
+### 2022.8.23
+
+- 修改基本版的错误，更改时间戳为可读的时间格式
+- 基本版可关闭控制台日志输出
+- 修改readme的描述
+
 ### 2021.2.3
 - 修改文档，优化特征计算逻辑  
-- 多线程bug尚未解决  
+- 发现多线程bug，同时读写多个csv可能冲突
 
 ### 2020.8.18
 - 新增多进程功能，大幅度加快运行速度

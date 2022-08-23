@@ -3,9 +3,11 @@ from scapy.all import *
 from scapy.utils import PcapReader
 import hashlib
 import argparse
-import csv
+import csv,time
 import os
 
+
+noLog = False
 # 根据规则区分服务器和客户端
 def NormalizationSrcDst(src,sport,dst,dport):
     if sport < dport:
@@ -127,9 +129,10 @@ def read_pcap(pcapname,csvname):
     with open(csvname,"a+",newline="") as file:
         writer = csv.writer(file)
         for v in streams.values():
-            writer.writerow((v.start_time,v.end_time-v.start_time,v.src,v.sport,v.dst,v.dport,
-                             ,v.packet_num,v.byte_num,v.byte_num/v.packet_num,v.protol))
-            print(v)
+            writer.writerow((time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(v.start_time)),v.end_time-v.start_time,v.src,v.sport,v.dst,v.dport,
+                             v.packet_num,v.byte_num,v.byte_num/v.packet_num,v.protol))
+            if noLog == False:
+                print(v)
 
 if __name__ == "__main__":
 
@@ -137,9 +140,11 @@ if __name__ == "__main__":
     parser.add_argument("-p","--pcap",help="pcap文件名",action='store',default='test.pcap')
     parser.add_argument("-o","--output",help="输出的csv文件名",action = 'store',default = "stream.csv")
     parser.add_argument("-a","--all",action = 'store_true',help ='读取当前文件夹下的所有pcap文件',default=False)
+    parser.add_argument("-n","--nolog",action = 'store_true',help ='读取当前文件夹下的所有pcap文件',default=False)
     parser.add_argument("-t","--test",action = 'store_true',default = False)
     args = parser.parse_args()
     csvname = args.output
+    noLog = args.nolog
     if args.all == False:
         pcapname = args.pcap
         read_pcap(pcapname,csvname)

@@ -4,3 +4,4 @@
 *.zip
 __pycahe__
 .DS_Store
+test*

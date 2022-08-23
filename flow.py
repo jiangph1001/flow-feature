@@ -1,12 +1,12 @@
 import math,decimal,hashlib,csv,uuid,time,os
-import configparser
+
 import scapy
 from scapy.all import *
 from scapy.utils import PcapReader
 #from scapy_ssl_tls.scapy_ssl_tls import *
 #from datetime import datetime, timedelta, timezone
 #import threading
-import multiprocessing
+
 from multiprocessing import Process
 feature_name=['fiat_mean','fiat_min','fiat_max','fiat_std','biat_mean','biat_min','biat_max','biat_std',
              'diat_mean','diat_min','diat_max','diat_std','duration','fwin_total','fwin_mean','fwin_min',
@@ -17,7 +17,6 @@ feature_name=['fiat_mean','fiat_min','fiat_max','fiat_std','biat_mean','biat_min
              'fpl_s','bpl_s','dpl_s','fin_cnt','syn_cnt','rst_cnt','pst_cnt','ack_cnt','urg_cnt','cwe_cnt','ece_cnt',
              'fwd_pst_cnt','fwd_urg_cnt','bwd_pst_cnt','bwd_urg_cnt','fp_hdr_len','bp_hdr_len','dp_hdr_len',''
             'f_ht_len','b_ht_len','d_ht_len']
-
 
 class flowProcess(Process):
     def __init__(self, writer,read_pcap,process_name = None):
