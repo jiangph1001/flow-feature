@@ -25,8 +25,11 @@ def process_pcap_worker(args):
     pcap_path, run_mode = args
     try:
         packets = rdpcap(pcap_path)
+    except (IOError, OSError) as e:
+        print(f"Failed to read pcap file {pcap_path}: {e}")
+        return []
     except Exception as e:
-        print(f"read {pcap_path} ERROR: {e}")
+        print(f"Error processing pcap {pcap_path}: {e}")
         return []
 
     if run_mode == "pcap":

@@ -317,5 +317,49 @@ class TestTuple2HashConsistency(unittest.TestCase):
             self.assertNotEqual(hash1, hash3, "Different argument order should produce different hash")
 
 
+class TestPacketWin(unittest.TestCase):
+    """Test the packet_win function - congestion window size features"""
+
+    def test_empty_flow(self):
+        result = packet_win([])
+        self.assertEqual(result, (0, 0, 0, 0, 0))
+
+    def test_non_tcp_flow(self):
+        # Create a mock non-TCP packet (UDP)
+        pkt = Mock()
+        pkt.__getitem__ = Mock(return_value=Mock(proto=17))  # UDP has proto=17
+        result = packet_win([pkt])
+        self.assertEqual(result, (0, 0, 0, 0, 0))
+
+
+class TestPacketFlags(unittest.TestCase):
+    """Test the packet_flags function - TCP flag statistics"""
+
+    def test_empty_flow_key0(self):
+        # Test with key=0 (full flag list) on empty flow
+        result = packet_flags([], 0)
+        self.assertEqual(result, [-1, -1, -1, -1, -1, -1, -1, -1])
+
+    def test_empty_flow_key1(self):
+        # Test with key=1 (partial flag list) on empty flow
+        result = packet_flags([], 1)
+        self.assertEqual(result, (-1, -1))
+
+    def test_non_tcp_flow_key0(self):
+        # Create a mock non-TCP packet
+        pkt = Mock()
+        pkt.__getitem__ = Mock(return_value=Mock(proto=17))  # UDP
+        result = packet_flags([pkt], 0)
+        self.assertEqual(result, [-1, -1, -1, -1, -1, -1, -1, -1])
+
+
+class TestPacketHdrLen(unittest.TestCase):
+    """Test the packet_hdr_len function - packet header length"""
+
+    def test_empty_flow(self):
+        result = packet_hdr_len([])
+        self.assertEqual(result, 0)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
