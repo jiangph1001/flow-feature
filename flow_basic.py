@@ -22,10 +22,10 @@ def NormalizationSrcDst(src,sport,dst,dport):
     else:
         return (src,sport,dst,dport)
 
-# 将五元组信息转换为MD5值,用于字典存储    
+# 将五元组信息转换为SHA256值,用于字典存储
 def tuple2hash(src,sport,dst,dport,protocol):
     hash_str = src+str(sport)+dst+str(dport)+protocol
-    return hashlib.md5(hash_str.encode(encoding="UTF-8")).hexdigest()
+    return hashlib.sha256(hash_str.encode(encoding="UTF-8")).hexdigest()
 
 ## 测试用
 def getStreamPacketsHistory(src,sport,dst,dport,protocol='TCP'):
