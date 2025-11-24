@@ -2,6 +2,7 @@
 *.csv
 *.data
 *.zip
-__pycahe__
+__pycache__
 .DS_Store
-test*
+test_*.pcap
+test_*.csv

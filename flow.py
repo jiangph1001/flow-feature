@@ -15,8 +15,8 @@ feature_name=['fiat_mean','fiat_min','fiat_max','fiat_std','biat_mean','biat_min
              'bpnum_s','dpnum_s','fpl_total','fpl_mean','fpl_min','fpl_max','fpl_std','bpl_total','bpl_mean',
              'bpl_min','bpl_max','bpl_std','dpl_total','dpl_mean','dpl_min','dpl_max','dpl_std','bfpl_rate',
              'fpl_s','bpl_s','dpl_s','fin_cnt','syn_cnt','rst_cnt','pst_cnt','ack_cnt','urg_cnt','cwe_cnt','ece_cnt',
-             'fwd_pst_cnt','fwd_urg_cnt','bwd_pst_cnt','bwd_urg_cnt','fp_hdr_len','bp_hdr_len','dp_hdr_len',''
-            'f_ht_len','b_ht_len','d_ht_len']
+             'fwd_pst_cnt','fwd_urg_cnt','bwd_pst_cnt','bwd_urg_cnt','fp_hdr_len','bp_hdr_len','dp_hdr_len',
+             'f_ht_len','b_ht_len','d_ht_len']
 
 class flowProcess(Process):
     def __init__(self, writer,read_pcap,process_name = None):
@@ -159,10 +159,10 @@ def NormalizationSrcDst(src,sport,dst,dport):
     else:
         return (src,sport,dst,dport)
 
-# 将五元组信息转换为MD5值,用于字典存储    
+# 将五元组信息转换为SHA256值,用于字典存储
 def tuple2hash(src,sport,dst,dport,protocol = "TCP"):
     hash_str = src+str(sport)+dst+str(dport)+protocol
-    return hashlib.md5(hash_str.encode(encoding="UTF-8")).hexdigest()
+    return hashlib.sha256(hash_str.encode(encoding="UTF-8")).hexdigest()
         
 # 输入:list
 # 输出:mean,min,max,std

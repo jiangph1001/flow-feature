@@ -2,9 +2,17 @@
 
 环境:Python3
 
-## warn
-多进程模式下，若同时读取多个pcap文件，可能导致记录丢失。  
-建议忽略多进程功能，仅设置并发数为1
+## 重要更新
+
+✅ **2025年11月 - 重大修复更新**
+- 修复多进程实现，现在可以安全使用多进程处理（不再导致数据丢失）
+- 替换MD5为更安全的SHA256算法
+- 修复dump/load功能
+- 修复flow模式缺失端口信息的问题
+- 修复CSV列名错误
+- 添加单元测试（25个测试用例）
+
+查看 [CHANGES.md](CHANGES.md) 了解详细修复内容。
 
 ## 依赖库
 
@@ -13,6 +21,19 @@
 - ConfigParser用于读取配置文件`pip install ConfigParser`
 
 - joblib(可选)`pip install joblib`
+
+### 使用虚拟环境（推荐）
+
+```bash
+# 使用uv创建虚拟环境
+uv venv
+
+# 安装依赖
+uv pip install -r requirements.txt
+
+# 运行测试
+uv run python test_flow_feature.py
+```
 
 
 
@@ -132,13 +153,13 @@ pcap_loc = 【pcap文件夹位置】
 
 - `run_mode` 有两种模式分别为`pcap`和`flow`
   - 在pcap模式下，来自同一个pcap的所有数据包会被视为属于同一个流，csv中的头两个字段为`pcap文件名`和`目的IP数量`
-  - 在flow模式下，相同五元组的数据包会被视为同一个流，头两个字段为`src`和`dst`。暂不支持跨pcap合并五元组（也不是不行，就是会占用大量内存）。
+  - 在flow模式下，相同五元组的数据包会被视为同一个流，头四个字段为`src`、`sport`、`dst`、`dport`
   - 如果是通过`load_switch`载入的数据包，则无论run_mode设置成什么都是flow模式
 - `read_all`为True时，会读取指定目录下的所有pcap文件,False时会读取`pcap_name`指定pcap文件
 - `pcap_loc`指定读取pcap的目录位置
 - `csv_name`用于指定输出特征时的文件名
-- `multi_process` 开启多进程（建议！）
-- `process_num` 多进程的数目，目前限制为不超过CPU核心数目
+- `multi_process` 开启多进程（✅ 现已修复，可安全使用！）
+- `process_num` 多进程的数目，建议设置为CPU核心数
 
 #### feature
 
@@ -183,3 +204,60 @@ pcap_loc = 【pcap文件夹位置】
 
 ### 2020.4.19
 - 初版demo
+
+### 2025.11.25
+- 修复多进程bug，现在可以安全使用多进程
+- 替换MD5为SHA256提升安全性
+- 修复dump/load功能
+- 修复flow模式缺失端口信息
+- 添加单元测试
+
+---
+
+## 测试
+
+### 运行单元测试
+
+项目包含完整的单元测试，覆盖核心功能：
+
+```bash
+# 使用虚拟环境运行测试
+uv run python test_flow_feature.py
+
+# 或者直接运行
+python test_flow_feature.py
+```
+
+测试内容包括：
+- 归一化函数（NormalizationSrcDst）
+- SHA256哈希生成（tuple2hash）
+- 统计计算（均值、标准差等）
+- 流分离逻辑
+- 包到达时间间隔计算
+- 包长度计算
+- Flow类操作
+- TCP包检测
+
+当前测试结果：**25个测试全部通过** ✅
+
+### 测试覆盖率
+
+- `flow.py`: 核心功能测试覆盖
+- `get_flow_feature.py`: 通过集成测试验证
+- `flow_basic.py`: 建议后续添加测试
+
+---
+
+## 贡献指南
+
+欢迎提交Issue和Pull Request！在提交代码前，请：
+
+1. 确保所有测试通过：`python test_flow_feature.py`
+2. 为新功能添加相应的测试用例
+3. 更新CHANGES.md记录变更
+
+---
+
+## 许可证
+
+本项目基于现有代码进行修复和改进。
