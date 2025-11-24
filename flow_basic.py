@@ -101,8 +101,11 @@ def read_pcap(pcapname,csvname):
     try:
         # 可能存在格式错误读取失败的情况
         packets=rdpcap(pcapname)
-    except:
-        print("read pcap error")
+    except (IOError, OSError):
+        print("Failed to read pcap file: {}".format(pcapname))
+        return
+    except Exception:
+        print("Error processing pcap: {}".format(pcapname))
         return
     global streams
     streams = {}

@@ -1,4 +1,4 @@
-import math,decimal,hashlib,csv,uuid,time,os
+import math,hashlib,csv,time,os
 
 import scapy
 from scapy.all import *
@@ -83,7 +83,7 @@ class Flow:
         diat_mean,diat_min,diat_max,diat_std = packet_iat(pkts)
 
         # 为了防止除0错误，不让其为0
-        duration = round(pkts[-1].time - pkts[0].time+ decimal.Decimal(0.0001), 6) 
+        duration = round(pkts[-1].time - pkts[0].time + 0.0001, 6) 
         
         # 拥塞窗口大小特征 15
         fwin_total,fwin_mean,fwin_min,fwin_max,fwin_std = packet_win(fwd_flow)
@@ -94,7 +94,7 @@ class Flow:
         fpnum=len(fwd_flow)
         bpnum=len(bwd_flow)
         dpnum=fpnum+bpnum
-        bfpnum_rate = round(bpnum / (fpnum + 0.001), 6) 
+        bfpnum_rate = round(bpnum / max(fpnum, 1), 6)
         fpnum_s = round(fpnum / duration, 6)
         bpnum_s = round(bpnum / duration, 6)
         dpnum_s = fpnum_s + bpnum_s
@@ -103,7 +103,7 @@ class Flow:
         fpl_total,fpl_mean,fpl_min,fpl_max,fpl_std = packet_len(fwd_flow)
         bpl_total,bpl_mean,bpl_min,bpl_max,bpl_std = packet_len(bwd_flow)
         dpl_total,dpl_mean,dpl_min,dpl_max,dpl_std = packet_len(pkts)
-        bfpl_rate = round(bpl_total / (fpl_total + 0.001), 6) 
+        bfpl_rate = round(bpl_total / max(fpl_total, 1), 6)
         fpl_s = round(fpl_total / duration, 6)
         bpl_s = round(bpl_total / duration, 6)
         dpl_s = fpl_s + bpl_s
@@ -117,9 +117,9 @@ class Flow:
         fp_hdr_len=packet_hdr_len(fwd_flow)
         bp_hdr_len=packet_hdr_len(bwd_flow)
         dp_hdr_len=fp_hdr_len + bp_hdr_len
-        f_ht_len=round(fp_hdr_len /(fpl_total+1), 6)
-        b_ht_len=round(bp_hdr_len /(bpl_total+1), 6)
-        d_ht_len=round(dp_hdr_len /dpl_total, 6)
+        f_ht_len=round(fp_hdr_len / max(fpl_total, 1), 6)
+        b_ht_len=round(bp_hdr_len / max(bpl_total, 1), 6)
+        d_ht_len=round(dp_hdr_len / max(dpl_total, 1), 6)
 
         '''
         # 数据流起始的时间 
@@ -289,8 +289,14 @@ def get_flow_feature_from_pcap(pcapname,writer):
     try:
         # It is possible that scapy can not read the pcap
         packets=rdpcap(pcapname)
+    except (IOError, OSError) as e:
+        # 捕获文件读取相关错误（文件不存在、无权限等）
+        print("Failed to read pcap file {}: {}".format(pcapname, e))
+        return
     except Exception as e:
-        print("read {} ERROR:{}".format(pcapname,e))
+        # 其他异常（如scapy解析错误），也捕获并报告
+        # 但不应捕获KeyboardInterrupt等系统异常
+        print("Error processing pcap {}: {}".format(pcapname, e))
         return 
     flows = {}
     for pkt in packets:
@@ -319,8 +325,11 @@ def get_pcap_feature_from_pcap(pcapname,writer):
     try:
         # It is possible that scapy can not read the pcap
         packets=rdpcap(pcapname)
+    except (IOError, OSError) as e:
+        print("Failed to read pcap file {}: {}".format(pcapname, e))
+        return
     except Exception as e:
-        print(" read {} ERROR:{} ".format(pcapname,e))
+        print("Error processing pcap {}: {}".format(pcapname, e))
         return
     this_flow = None
     for pkt in packets:
